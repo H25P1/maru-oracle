@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>Maru Oracle — Knowledge Graph</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000107; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas { display: block; }
+
+  #hud {
+    position: fixed; top: 22px; left: 26px; z-index: 10; pointer-events: none;
+    color: #7be8ff; text-shadow: 0 0 8px rgba(0,230,255,.8);
+  }
+  #hud h1 { font-size: 20px; letter-spacing: 6px; margin: 0; font-weight: 400; }
+  #hud .sub { font-size: 11px; letter-spacing: 2px; opacity: .6; margin-top: 4px; }
+
+  #hud.br { top: auto; left: auto; right: 26px; bottom: 22px; text-align: right; }
+
+  .label {
+    color: #bdf5ff; font-size: 11px; letter-spacing: 1px;
+    padding: 3px 8px; background: rgba(0,20,35,.55);
+    border: 1px solid rgba(0,225,255,.45); border-radius: 2px;
+    white-space: nowrap; text-shadow: 0 0 6px rgba(0,230,255,.9);
+    pointer-events: none;
+  }
+  .label b { color: #eafcff; }
+  .label span { opacity: .55; }
+
+  #scanlines {
+    position: fixed; inset: 0; z-index: 5; pointer-events: none; opacity: .06;
+    background: repeating-linear-gradient(0deg, #7be8ff 0px, #7be8ff 1px, transparent 1px, transparent 3px);
+  }
+
+  #vignette {
+    position: fixed; inset: 0; z-index: 4; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 45%, #000107 100%);
+  }
+</style>
+</head>
+<body>
+
+<div id="hud">
+  <h1>MARU ORACLE</h1>
+  <div class="sub">KNOWLEDGE GRAPH // SRC: KlakMath.learn</div>
+</div>
+<div id="hud br">
+  <div class="sub" id="clock">--:--:--</div>
+  <div class="sub">NODES: 6 · LINKS: 12 · STATUS: ONLINE</div>
+</div>
+
+<div id="scanlines"></div>
+<div id="vignette"></div>
+<div id="container"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+/*
+  Deterministic hash + on-sphere sampling — a JS stand-in for KlakMath's
+  XXHash.OnSphere(). Same idea (seed in, unit vector on a sphere out),
+  just a cheap sine-based hash instead of the real XXHash algorithm.
+*/
+function hash(n) {
+  const x = Math.sin(n * 127.1) * 43758.5453;
+  return x - Math.floor(x);
+}
+function onSphere(seed) {
+  const u = hash(seed * 2.0 + 0.13);
+  const v = hash(seed * 2.0 + 51.7);
+  const theta = 2 * Math.PI * u;
+  const phi = Math.acos(2 * v - 1);
+  return new THREE.Vector3(
+    Math.sin(phi) * Math.cos(theta),
+    Math.sin(phi) * Math.sin(theta),
+    Math.cos(phi)
+  );
+}
+// Critically-damped spring step — JS port of the idea behind KlakMath's
+// CdsTween: smooth, overshoot-free interpolation toward a target.
+function springStep(current, velocity, target, dt, angularFreq = 4) {
+  const omega = angularFreq;
+  const x = current - target;
+  const ex = Math.exp(-omega * dt);
+  const newVel = (velocity - x * omega * omega * dt) * ex;
+  const newPos = target + (x + (velocity - x * omega) * dt) * ex;
+  return [newPos, newVel];
+}
+
+const CYAN = 0x00eaff;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 1000);
+camera.position.set(0, 1.4, 7.5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.getElementById('container').appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+document.getElementById('container').appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, labelRenderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.minDistance = 3.5;
+controls.maxDistance = 16;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.6;
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.15, 0.65, 0.15);
+composer.addPass(bloom);
+
+// ---- world group: everything that spins together as "the globe" ----
+const world = new THREE.Group();
+scene.add(world);
+
+// wireframe globe shell
+const globe = new THREE.Mesh(
+  new THREE.IcosahedronGeometry(2, 3),
+  new THREE.MeshBasicMaterial({ color: 0x0099ff, wireframe: true, transparent: true, opacity: 0.22 })
+);
+world.add(globe);
+
+// soft inner core glow
+world.add(new THREE.Mesh(
+  new THREE.SphereGeometry(1.35, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.07 })
+));
+
+// scattered point-cloud "network" dots on the shell
+const DOT_COUNT = 1000;
+const dotPositions = new Float32Array(DOT_COUNT * 3);
+for (let i = 0; i < DOT_COUNT; i++) {
+  const jitter = 1 + (hash(i * 3.31) - 0.5) * 0.08;
+  const p = onSphere(i).multiplyScalar(2 * jitter);
+  dotPositions.set([p.x, p.y, p.z], i * 3);
+}
+const dotGeo = new THREE.BufferGeometry();
+dotGeo.setAttribute('position', new THREE.BufferAttribute(dotPositions, 3));
+world.add(new THREE.Points(dotGeo, new THREE.PointsMaterial({
+  color: 0x66e0ff, size: 0.018, transparent: true, opacity: 0.75,
+  blending: THREE.AdditiveBlending, depthWrite: false
+})));
+
+// ---- knowledge nodes: the 6 KlakMath modules from today's /learn run ----
+const modules = [
+  { name: 'CdsTween',         desc: 'spring interpolation' },
+  { name: 'ExpTween',         desc: 'exponential decay' },
+  { name: 'Noise',            desc: 'fractal gradient noise' },
+  { name: 'XXHash',           desc: 'deterministic PRNG' },
+  { name: 'Rotation',         desc: 'FromTo quaternion' },
+  { name: 'RandomExtensions', desc: 'disk / sphere sampling' },
+];
+
+const nodeGroup = new THREE.Group();
+const linesGroup = new THREE.Group();
+world.add(nodeGroup, linesGroup);
+
+const nodePositions = modules.map((m, i) => {
+  const pos = onSphere(i * 17.13 + 4).multiplyScalar(2.6);
+
+  const node = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 16, 16),
+    new THREE.MeshBasicMaterial({ color: 0x00fff2 })
+  );
+  node.position.copy(pos);
+  nodeGroup.add(node);
+
+  const div = document.createElement('div');
+  div.className = 'label';
+  div.innerHTML = `<b>${m.name}</b><br><span>${m.desc}</span>`;
+  const label = new CSS2DObject(div);
+  label.position.set(0, 0.14, 0);
+  node.add(label);
+
+  // spoke from core to node
+  const spoke = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), pos]),
+    new THREE.LineBasicMaterial({ color: 0x0099ff, transparent: true, opacity: 0.3 })
+  );
+  linesGroup.add(spoke);
+
+  return pos;
+});
+
+// ring edges connecting node -> node (arcs bowed outward), each carrying a data pulse
+const pulses = [];
+for (let i = 0; i < nodePositions.length; i++) {
+  const a = nodePositions[i];
+  const b = nodePositions[(i + 1) % nodePositions.length];
+  const mid = a.clone().add(b).multiplyScalar(0.5).normalize().multiplyScalar(3.15);
+  const curve = new THREE.CatmullRomCurve3([a, mid, b]);
+
+  linesGroup.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints(curve.getPoints(40)),
+    new THREE.LineBasicMaterial({ color: CYAN, transparent: true, opacity: 0.45 })
+  ));
+
+  const pulse = new THREE.Mesh(
+    new THREE.SphereGeometry(0.035, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffffff })
+  );
+  linesGroup.add(pulse);
+  pulses.push({ curve, mesh: pulse, offset: hash(i * 9.7), speed: 0.12 + hash(i * 4.2) * 0.08 });
+}
+
+// HUD radar rings, independent rotation speeds
+const rings = [];
+[[2.9, 0x00eaff, 0.28], [3.25, 0x0088ff, 0.18], [3.6, 0x00ffe0, 0.12]].forEach(([r, color, opacity], i) => {
+  const torus = new THREE.Mesh(
+    new THREE.TorusGeometry(r, 0.006 + i * 0.002, 8, 128),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity })
+  );
+  torus.rotation.x = Math.PI / 2 + i * 0.35;
+  torus.rotation.y = i * 0.6;
+  scene.add(torus);
+  rings.push({ mesh: torus, speed: (i % 2 ? 1 : -1) * (0.15 + i * 0.06) });
+});
+
+// background starfield (fixed, doesn't spin with the globe)
+const starCount = 1600;
+const starPositions = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+  starPositions.set([(Math.random() - 0.5) * 60, (Math.random() - 0.5) * 60, (Math.random() - 0.5) * 60], i * 3);
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x1c3a55, size: 0.03 })));
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+
+const clockEl = document.getElementById('clock');
+const clock = new THREE.Clock();
+
+// spring-eased "breathing" scale for the core, using the KlakMath-style spring step above
+let breatheVal = 1, breatheVel = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  world.rotation.y += 0.0016;
+  rings.forEach(r => (r.mesh.rotation.z += r.speed * dt));
+
+  const targetScale = 1 + Math.sin(t * 0.6) * 0.04;
+  [breatheVal, breatheVel] = springStep(breatheVal, breatheVel, targetScale, dt, 3.5);
+  globe.scale.setScalar(breatheVal);
+
+  pulses.forEach(p => {
+    const u = (t * p.speed + p.offset) % 1;
+    p.mesh.position.copy(p.curve.getPoint(u));
+  });
+
+  clockEl.textContent = new Date().toLocaleTimeString('en-GB');
+
+  controls.update();
+  composer.render();
+  labelRenderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
