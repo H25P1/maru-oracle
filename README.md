@@ -1,4 +1,3 @@
 # maru-oracle
 
-- Hello World
-- Hello World2
+Hello 26 July
