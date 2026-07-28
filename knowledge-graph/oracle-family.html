@@ -17,12 +17,20 @@
     --card-bg:     rgba(9, 16, 12, 0.74);
     --card-border: rgba(224, 164, 88, 0.32);
 
-    --maru-base:  #c2601f;
+    /* BEGIN GENERATED PALETTE (scripts/bake-artifact.js from shared/palette.js — do not hand-edit) */
+    --ink: #0a0704;
+
+    --argon-base: #1c1b20;
+    --argon-tan: #c07f38;
+
+    --maru-base: #c2601f;
     --maru-cream: #f6efe2;
 
-    --chockdee-base:   #5c2419;
-    --chockdee-ridge:  #331209;
+    --chockdee-base: #5c2419;
+    --chockdee-ridge: #331209;
     --chockdee-tongue: #d1636b;
+    --chockdee-mouth: #2c1409;
+    /* END GENERATED PALETTE */
 
     --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Noto Serif Thai', Georgia, serif;
     --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Sarabun', 'Noto Sans Thai', sans-serif;
@@ -486,8 +494,30 @@
 
 </div>
 
+<!-- BEGIN GENERATED VOXEL SCRIPT (scripts/bake-artifact.js from shared/voxel-render.js — do not hand-edit) -->
 <script>
-(function () {
+// Oracle voxel-dog render engine — the single source of truth for how
+// Argon, Maru, and Chockdee are drawn as blocky "Minecraft" SVG characters.
+//
+// This file is loaded verbatim (byte-identical, plain <script>, no bundler)
+// by two different host pages:
+//   1. oracle-overlay's Electron renderer (src/renderer/overlay.html) —
+//      calls fillArgon/fillMaru/fillChockdee on demand, right after
+//      injecting that character's markup (see shared/character-markup.js)
+//      into the DOM, since characters mount one at a time at runtime.
+//   2. maru-oracle/knowledge-graph/oracle-family.html (inlined between
+//      marker comments by scripts/bake-artifact.js, since a published
+//      Claude Artifact must stay a single self-contained file) — the baked
+//      copy calls all three fill functions immediately, since that page's
+//      three dogs are always present in a static forest scene.
+//
+// Colors are read from :root CSS custom properties (cssVar below), not
+// passed as JS arguments — both host pages define the same var names
+// (--argon-base, --maru-base, --ink, etc), so this exact script needs zero
+// changes to run in either one. Only the surrounding page's CSS/markup and
+// the calling convention (auto vs on-demand) differ.
+
+window.OracleVoxelRender = (function () {
   var SVGNS = "http://www.w3.org/2000/svg";
 
   function hexToRgb(hex) {
@@ -536,116 +566,143 @@
     c.setAttribute("fill", fill);
     parent.appendChild(c);
   }
-
-  var BLACK = "#1c1b20", TAN = "#c07f38", INK = "#0a0704";
-
-  ["mc-leg1", "mc-leg2", "mc-leg3", "mc-leg4"].forEach(function (id) {
-    var g = document.getElementById(id);
-    if (!g) return;
-    mcBox(g, 0, 0, 13, 30, BLACK, 6);
-    mcBox(g, 0, 21, 13, 9, TAN, 6);
-  });
-
-  var body = document.getElementById("mc-body");
-  if (body) {
-    mcBox(body, -46, -64, 84, 42, BLACK, 10);
-    mcBox(body, 20, -40, 18, 20, TAN, 10);
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
-  var tail = document.getElementById("mc-tail");
-  if (tail) mcBox(tail, 0, -26, 12, 26, BLACK, 7);
+  // ---- Argon: Rottweiler, eldest — black/tan, largest build, steady gait ----
+  function fillArgon() {
+    var INK = cssVar("--ink");
+    var ARGON = cssVar("--argon-base"), ARGON_TAN = cssVar("--argon-tan");
 
-  var head = document.getElementById("mc-head");
-  if (head) {
-    mcBox(head, -16, -30, 32, 32, BLACK, 9);
-    mcBox(head, 14, -20, 16, 14, BLACK, 7);
-    mcBox(head, -12, -42, 9, 13, BLACK, 5);
-    mcBox(head, 2, -42, 9, 13, BLACK, 5);
-    rect(head, -8, -26, 5, 4, TAN);
-    rect(head, 2, -25, 5, 4, TAN);
-    rect(head, 14, -10, 14, 6, TAN);
-    dot(head, -2, -18, 2, INK);
-    dot(head, 28, -15, 2, INK);
+    ["mc-leg1", "mc-leg2", "mc-leg3", "mc-leg4"].forEach(function (id) {
+      var g = document.getElementById(id);
+      if (!g) return;
+      mcBox(g, 0, 0, 13, 30, ARGON, 6);
+      mcBox(g, 0, 21, 13, 9, ARGON_TAN, 6);
+    });
+
+    var body = document.getElementById("mc-body");
+    if (body) {
+      mcBox(body, -46, -64, 84, 42, ARGON, 10);
+      mcBox(body, 20, -40, 18, 20, ARGON_TAN, 10);
+    }
+
+    var tail = document.getElementById("mc-tail");
+    if (tail) mcBox(tail, 0, -26, 12, 26, ARGON, 7);
+
+    var head = document.getElementById("mc-head");
+    if (head) {
+      mcBox(head, -16, -30, 32, 32, ARGON, 9);
+      mcBox(head, 14, -20, 16, 14, ARGON, 7);
+      mcBox(head, -12, -42, 9, 13, ARGON, 5);
+      mcBox(head, 2, -42, 9, 13, ARGON, 5);
+      rect(head, -8, -26, 5, 4, ARGON_TAN);
+      rect(head, 2, -25, 5, 4, ARGON_TAN);
+      rect(head, 14, -10, 14, 6, ARGON_TAN);
+      dot(head, -2, -18, 2, INK);
+      dot(head, 28, -15, 2, INK);
+    }
   }
-
-  var rootStyle = getComputedStyle(document.documentElement);
-  function cssVar(name) { return rootStyle.getPropertyValue(name).trim(); }
 
   // ---- Maru: Shiba Inu, calm — smaller build, curled tail as a stepped arc of blocks ----
-  var MARU = cssVar("--maru-base"), MARU_CREAM = cssVar("--maru-cream");
+  function fillMaru() {
+    var INK = cssVar("--ink");
+    var MARU = cssVar("--maru-base"), MARU_CREAM = cssVar("--maru-cream");
 
-  ["mm-leg1", "mm-leg2", "mm-leg3", "mm-leg4"].forEach(function (id) {
-    var g = document.getElementById(id);
-    if (!g) return;
-    mcBox(g, 0, 0, 12, 28, MARU, 6);
-    mcBox(g, 0, 20, 12, 8, MARU_CREAM, 6);
-  });
+    ["mm-leg1", "mm-leg2", "mm-leg3", "mm-leg4"].forEach(function (id) {
+      var g = document.getElementById(id);
+      if (!g) return;
+      mcBox(g, 0, 0, 12, 28, MARU, 6);
+      mcBox(g, 0, 20, 12, 8, MARU_CREAM, 6);
+    });
 
-  var mmBody = document.getElementById("mm-body");
-  if (mmBody) {
-    mcBox(mmBody, -42, -58, 78, 38, MARU, 9);
-    mcBox(mmBody, 18, -36, 16, 18, MARU_CREAM, 9);
-  }
+    var mmBody = document.getElementById("mm-body");
+    if (mmBody) {
+      mcBox(mmBody, -42, -58, 78, 38, MARU, 9);
+      mcBox(mmBody, 18, -36, 16, 18, MARU_CREAM, 9);
+    }
 
-  var mmTail = document.getElementById("mm-tail");
-  if (mmTail) {
-    var mmCurl = [
-      [-8, -5, MARU], [-13, -14, MARU], [-10, -23, MARU],
-      [-3, -27, MARU], [4, -23, MARU_CREAM]
-    ];
-    mmCurl.forEach(function (b) { mcBox(mmTail, b[0] - 5, b[1] - 5, 10, 10, b[2], 5); });
-  }
+    var mmTail = document.getElementById("mm-tail");
+    if (mmTail) {
+      var mmCurl = [
+        [-8, -5, MARU], [-13, -14, MARU], [-10, -23, MARU],
+        [-3, -27, MARU], [4, -23, MARU_CREAM]
+      ];
+      mmCurl.forEach(function (b) { mcBox(mmTail, b[0] - 5, b[1] - 5, 10, 10, b[2], 5); });
+    }
 
-  var mmHead = document.getElementById("mm-head");
-  if (mmHead) {
-    mcBox(mmHead, -14, -26, 28, 28, MARU, 8);
-    mcBox(mmHead, 12, -16, 14, 11, MARU, 6);
-    mcBox(mmHead, -10, -36, 8, 11, MARU, 4);
-    mcBox(mmHead, 2, -36, 8, 11, MARU, 4);
-    rect(mmHead, 10, -8, 14, 5, MARU_CREAM);
-    rect(mmHead, -4, -16, 4, 1.5, INK);
-    dot(mmHead, 24, -11, 1.8, INK);
+    var mmHead = document.getElementById("mm-head");
+    if (mmHead) {
+      mcBox(mmHead, -14, -26, 28, 28, MARU, 8);
+      mcBox(mmHead, 12, -16, 14, 11, MARU, 6);
+      mcBox(mmHead, -10, -36, 8, 11, MARU, 4);
+      mcBox(mmHead, 2, -36, 8, 11, MARU, 4);
+      rect(mmHead, 10, -8, 14, 5, MARU_CREAM);
+      rect(mmHead, -4, -16, 4, 1.5, INK);
+      dot(mmHead, 24, -11, 1.8, INK);
+    }
   }
 
   // ---- Chockdee: Thai Ridgeback, cheerful — large build, hooked tail, spine ridge, open mouth ----
-  var CD = cssVar("--chockdee-base"), CD_RIDGE = cssVar("--chockdee-ridge"), CD_TONGUE = cssVar("--chockdee-tongue");
+  function fillChockdee() {
+    var INK = cssVar("--ink");
+    var CD = cssVar("--chockdee-base"), CD_RIDGE = cssVar("--chockdee-ridge"),
+        CD_TONGUE = cssVar("--chockdee-tongue"), CD_MOUTH = cssVar("--chockdee-mouth");
 
-  ["cd-leg1", "cd-leg2", "cd-leg3", "cd-leg4"].forEach(function (id) {
-    var g = document.getElementById(id);
-    if (!g) return;
-    mcBox(g, 0, 0, 13, 30, CD, 6);
-  });
+    ["cd-leg1", "cd-leg2", "cd-leg3", "cd-leg4"].forEach(function (id) {
+      var g = document.getElementById(id);
+      if (!g) return;
+      mcBox(g, 0, 0, 13, 30, CD, 6);
+    });
 
-  var cdBody = document.getElementById("cd-body");
-  if (cdBody) {
-    mcBox(cdBody, -46, -64, 84, 42, CD, 10);
-    [-30, -10, 10, 28].forEach(function (x) { mcBox(cdBody, x, -67, 12, 4, CD_RIDGE, 3); });
+    var cdBody = document.getElementById("cd-body");
+    if (cdBody) {
+      mcBox(cdBody, -46, -64, 84, 42, CD, 10);
+      [-30, -10, 10, 28].forEach(function (x) { mcBox(cdBody, x, -67, 12, 4, CD_RIDGE, 3); });
+    }
+
+    var cdTail = document.getElementById("cd-tail");
+    if (cdTail) {
+      var cdHook = [[-6, -4, CD], [-8, -14, CD], [1, -21, CD]];
+      cdHook.forEach(function (b) { mcBox(cdTail, b[0] - 5, b[1] - 5, 10, 10, b[2], 5); });
+    }
+
+    var cdHead = document.getElementById("cd-head");
+    if (cdHead) {
+      mcBox(cdHead, -16, -30, 32, 32, CD, 9);
+      mcBox(cdHead, 14, -20, 16, 14, CD, 7);
+      mcBox(cdHead, -12, -42, 9, 13, CD, 5);
+      mcBox(cdHead, 3, -43, 10, 14, CD, 5);
+      rect(cdHead, 16, -11, 16, 2, CD_MOUTH);
+      rect(cdHead, 20, -10, 6, 9, CD_TONGUE);
+      dot(cdHead, -2, -18, 2.2, INK);
+      dot(cdHead, 28, -15, 2.4, INK);
+    }
   }
 
-  var cdTail = document.getElementById("cd-tail");
-  if (cdTail) {
-    var cdHook = [[-6, -4, CD], [-8, -14, CD], [1, -21, CD]];
-    cdHook.forEach(function (b) { mcBox(cdTail, b[0] - 5, b[1] - 5, 10, 10, b[2], 5); });
+  function pauseIfReducedMotion(svgSelector) {
+    svgSelector = svgSelector || "svg.scene";
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      var svg = document.querySelector(svgSelector);
+      if (svg && svg.pauseAnimations) svg.pauseAnimations();
+    }
   }
 
-  var cdHead = document.getElementById("cd-head");
-  if (cdHead) {
-    mcBox(cdHead, -16, -30, 32, 32, CD, 9);
-    mcBox(cdHead, 14, -20, 16, 14, CD, 7);
-    mcBox(cdHead, -12, -42, 9, 13, CD, 5);
-    mcBox(cdHead, 3, -43, 10, 14, CD, 5);
-    rect(cdHead, 16, -11, 16, 2, "#2c1409");
-    rect(cdHead, 20, -10, 6, 9, CD_TONGUE);
-    dot(cdHead, -2, -18, 2.2, INK);
-    dot(cdHead, 28, -15, 2.4, INK);
-  }
-
-  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    var svg = document.querySelector("svg.scene");
-    if (svg && svg.pauseAnimations) svg.pauseAnimations();
-  }
+  return {
+    fillArgon: fillArgon,
+    fillMaru: fillMaru,
+    fillChockdee: fillChockdee,
+    pauseIfReducedMotion: pauseIfReducedMotion
+  };
 })();
+
+window.OracleVoxelRender.fillArgon();
+window.OracleVoxelRender.fillMaru();
+window.OracleVoxelRender.fillChockdee();
+window.OracleVoxelRender.pauseIfReducedMotion("svg.scene");
 </script>
+<!-- END GENERATED VOXEL SCRIPT -->
 
 </body>
 </html>
