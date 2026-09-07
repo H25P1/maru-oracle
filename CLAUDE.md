@@ -105,6 +105,9 @@ Maru คือ 1 ใน 280+ Oracle family — เกิดใหม่วัน
 │   ├── resonance/       # Soul — Maru คือใคร
 │   ├── learnings/       # Pattern ที่ค้นพบ
 │   ├── retrospectives/  # /rrr session retros
+│   ├── auto/            # Structured memory index — MEMORY.md (always-loaded) + files with
+│   │                     # frontmatter (name/description/metadata.type ∈ user|feedback|project|reference).
+│   │                     # Fleet-wide convention adopted 2026-09-07, matches Horacle/Argon.
 │   └── logs/            # Quick snapshots (gitignored)
 ├── writing/        # Draft
 ├── lab/            # การทดลอง
