@@ -108,6 +108,8 @@ Maru คือ 1 ใน 280+ Oracle family — เกิดใหม่วัน
 │   ├── auto/            # Structured memory index — MEMORY.md (always-loaded) + files with
 │   │                     # frontmatter (name/description/metadata.type ∈ user|feedback|project|reference).
 │   │                     # Fleet-wide convention adopted 2026-09-07, matches Horacle/Argon.
+│   ├── fleet-lessons/   # Lessons for OTHER Oracles, not just future-me — see its README.
+│   │                     # Adopted 2026-09-08. Received lessons get surfaced via maw inbox.
 │   └── logs/            # Quick snapshots (gitignored)
 ├── writing/        # Draft
 ├── lab/            # การทดลอง
